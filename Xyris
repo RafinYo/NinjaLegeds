@@ -1,6 +1,6 @@
 if game.PlaceId == 3956818381 then
     -- Clean up previous UI instances
-    for i, v in pairs(game:GetService("CoreGui"):GetChildren()) do
+    for _, v in pairs(game:GetService("CoreGui"):GetChildren()) do
         if v:FindFirstChild("MainFrameHolder") or v:FindFirstChild("NotificationHolder") then
             v:Destroy()
         end
@@ -61,9 +61,20 @@ if game.PlaceId == 3956818381 then
 
     -- Pet Crystals Dropdown and Button
     local SelectedCrystal
-    PetsTab:CreateDropdown("Select Crystal", game:GetService("Workspace").mapCrystalsFolder:GetChildren(), function(crystal)
-        SelectedCrystal = crystal.Name -- Assign the selected crystal name correctly
-    end)
+    local crystals = game:GetService("Workspace").mapCrystalsFolder:GetChildren()
+
+    if #crystals == 0 then
+        warn("No crystals found in mapCrystalsFolder.")
+    else
+        local crystalNames = {}
+        for _, crystal in ipairs(crystals) do
+            table.insert(crystalNames, crystal.Name)
+        end
+
+        PetsTab:CreateDropdown("Select Crystal", crystalNames, function(crystalName)
+            SelectedCrystal = crystalName -- Assign the selected crystal name correctly
+        end)
+    end
 
     PetsTab:CreateButton("Open Selected Crystal", function()
         if SelectedCrystal then
