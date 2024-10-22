@@ -28,126 +28,102 @@ if game.PlaceId == 3956818381 then
         },
         Discord = {
             Enabled = true,
-            Invite = "3WtS2F7CaX", -- Your Discord invite link
+            Invite = "3WtS2F7CaX", -- Discord invite link
             RememberJoins = true
         },
     })
 
     local Character = game.Players.LocalPlayer.Character
 
-    -- Create Tabs and Sections
+    -- Tabs and Sections
     local AutofarmTab = Window:CreateTab("Autofarm")
-    local MainSection = AutofarmTab:CreateSection("Main")
-
     local PetsTab = Window:CreateTab("Pets")
-    local EggSection = PetsTab:CreateSection("Open Crystals")
-
-    local TeleportTab = Window:CreateTab("Teleporting")
-    local TeleportingSection = TeleportTab:CreateSection("Teleport To Islands")
-
-    local PlayerTab = Window:CreateTab("LocalPlayer")
-    local PlayerSection = PlayerTab:CreateSection("WalkSpeed/JumpPower")
-
+    local TeleportTab = Window:CreateTab("Teleport")
+    local PlayerTab = Window:CreateTab("Player")
     local MiscTab = Window:CreateTab("Misc")
-    local MiscSection = MiscTab:CreateSection("Miscellaneous")
 
-    -- Crystal Dropdown Functionality
-    local CrystalsList, SelectedCrystal = {}, nil
-    for _, v in pairs(game:GetService("Workspace").mapCrystalsFolder:GetChildren()) do
-        table.insert(CrystalsList, v.Name)
-    end
-
-    EggSection:CreateDropdown("Choose Crystal", CrystalsList, function(selected)
-        SelectedCrystal = selected
-        local priceInfo = game:GetService("ReplicatedStorage").crystalPrices[selected]
-        local number = require(game:GetService("ReplicatedStorage").globalFunctions)
-
-        EggSection:CreateLabel("Crystal Price: " .. number.shortenNumber(priceInfo.price.Value) .. " " .. priceInfo.priceType.Value)
-    end)
-
-    -- Auto Open Crystals Toggle
-    EggSection:CreateToggle("Auto Open Crystals", false, function(state)
-        getgenv().autoopencrystals = state
-        while getgenv().autoopencrystals do
-            if SelectedCrystal then
-                local event = game:GetService("ReplicatedStorage").rEvents.openCrystalRemote
-                event:InvokeServer("openCrystal", SelectedCrystal)
-            end
-            task.wait(0.5)
+    -- Autofarm Toggles
+    AutofarmTab:CreateToggle("Auto Swing", false, function(state)
+        getgenv().autoswing = state
+        while getgenv().autoswing do
+            game:GetService("Players").LocalPlayer.ninjaEvent:FireServer("swingKatana")
+            task.wait(0.1)
         end
     end)
 
-    -- Player Controls: WalkSpeed & JumpPower
-    PlayerSection:CreateSlider("WalkSpeed", 16, 500, 16, function(value)
-        Character.Humanoid.WalkSpeed = value
+    AutofarmTab:CreateToggle("Auto Sell", false, function(state)
+        getgenv().autosell = state
+        while getgenv().autosell do
+            game:GetService("Players").LocalPlayer.ninjaEvent:FireServer("sell")
+            task.wait(5)
+        end
     end)
 
-    PlayerSection:CreateSlider("JumpPower", 50, 400, 50, function(value)
-        Character.Humanoid.JumpPower = value
+    -- Pet Crystals Dropdown and Button
+    local SelectedCrystal
+    PetsTab:CreateDropdown("Select Crystal", game:GetService("Workspace").mapCrystalsFolder:GetChildren(), function(crystal)
+        SelectedCrystal = crystal
     end)
 
-    -- Teleport to Islands Dropdown
-    local Islands = {
+    PetsTab:CreateButton("Open Selected Crystal", function()
+        if SelectedCrystal then
+            local event = game:GetService("ReplicatedStorage").rEvents.openCrystalRemote
+            event:InvokeServer("openCrystal", SelectedCrystal)
+        else
+            Rayfield:Notify({ Title = "Error", Content = "No crystal selected!", Duration = 3 })
+        end
+    end)
+
+    -- Complete Island List for Teleporting
+    local islands = {
         "Enchanted Island", "Astral Island", "Mystical Island", "Space Island",
         "Tundra Island", "Eternal Island", "Sandstorm", "Thunderstorm",
         "Ancient Inferno Island", "Midnight Shadow Island", "Mythical Souls Island",
         "Winter Wonder Island", "Golden Master Island", "Dragon Legend Island",
         "Cybernetic Legends Island", "Skystorm Ultraus Island", "Chaos Legends Island",
-        "Soul Fusion Island", "Dark Elements Island", "Inner Peace Island", "Blazing Vortex Island"
+        "Soul Fusion Island", "Dark Elements Island", "Inner Peace Island",
+        "Blazing Vortex Island"
     }
 
-    TeleportingSection:CreateDropdown("Teleport to Island", Islands, function(island)
-        local teleportPart = game:GetService("Workspace").islandUnlockParts[island]
-        Character.HumanoidRootPart.CFrame = teleportPart.CFrame
+    -- Teleporting Section
+    TeleportTab:CreateDropdown("Select Island", islands, function(island)
+        local part = game:GetService("Workspace").islandUnlockParts[island]
+        Character.HumanoidRootPart.CFrame = part.CFrame
     end)
 
-    -- Unlock All Islands Button
-    MiscSection:CreateButton("Unlock All Islands", function()
+    -- Player WalkSpeed and JumpPower Sliders
+    PlayerTab:CreateSlider("WalkSpeed", 16, 500, 16, function(value)
+        Character.Humanoid.WalkSpeed = value
+    end)
+
+    PlayerTab:CreateSlider("JumpPower", 50, 400, 50, function(value)
+        Character.Humanoid.JumpPower = value
+    end)
+
+    -- Misc Section Buttons
+    MiscTab:CreateButton("Unlock All Islands", function()
         for _, part in pairs(game:GetService("Workspace").islandUnlockParts:GetChildren()) do
             firetouchinterest(Character.HumanoidRootPart, part, 0)
             firetouchinterest(Character.HumanoidRootPart, part, 1)
         end
     end)
 
-    -- Infinite Double Jumps Button
-    MiscSection:CreateButton("Infinite Double Jumps", function()
-        game.Players.LocalPlayer.multiJumpCount.Value = 999999999
-    end)
-
-    -- Auto Buy Ranks Toggle
-    local Ranks = {}
-    for _, rank in pairs(game:GetService("ReplicatedStorage").Ranks.Ground:GetChildren()) do
-        table.insert(Ranks, rank.Name)
-    end
-
-    MainSection:CreateToggle("Auto Buy All Ranks", false, function(state)
-        getgenv().autobuyranks = state
-        while getgenv().autobuyranks do
-            for _, rank in ipairs(Ranks) do
-                game:GetService("Players").LocalPlayer.ninjaEvent:FireServer("buyRank", rank)
-            end
-            task.wait(0.5)
-        end
-    end)
-
-    -- Unlock All Elements Button
-    local Elements = {}
-    for _, element in pairs(game:GetService("ReplicatedStorage").Elements:GetChildren()) do
-        table.insert(Elements, element.Name)
-    end
-
-    MiscSection:CreateButton("Unlock All Elements", function()
-        for _, element in ipairs(Elements) do
+    MiscTab:CreateButton("Unlock All Elements", function()
+        for _, element in pairs(game:GetService("ReplicatedStorage").Elements:GetChildren()) do
             game:GetService("ReplicatedStorage").rEvents.elementMasteryEvent:FireServer(element)
         end
     end)
 
-    -- Notify User Upon Script Load
+    MiscTab:CreateButton("Infinite Double Jumps", function()
+        game.Players.LocalPlayer.multiJumpCount.Value = 999999999
+    end)
+
+    -- Notify User on Load
     Rayfield:Notify({
         Title = "Xyris Hub Loaded",
         Content = "Enjoy using the script! Join our Discord for support.",
         Duration = 6.5,
-        Image = 4483362458, -- Replace with a relevant asset ID if needed
+        Image = 4483362458, -- Replace with your desired asset ID
         Actions = {
             Ignore = {
                 Name = "Join Discord",
