@@ -33,7 +33,7 @@ if game.PlaceId == 3956818381 then
         },
     })
 
-    local Character = game.Players.LocalPlayer.Character
+    local Character = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
 
     -- Tabs and Sections
     local AutofarmTab = Window:CreateTab("Autofarm")
@@ -62,7 +62,7 @@ if game.PlaceId == 3956818381 then
     -- Pet Crystals Dropdown and Button
     local SelectedCrystal
     PetsTab:CreateDropdown("Select Crystal", game:GetService("Workspace").mapCrystalsFolder:GetChildren(), function(crystal)
-        SelectedCrystal = crystal
+        SelectedCrystal = crystal.Name -- Assign the selected crystal name correctly
     end)
 
     PetsTab:CreateButton("Open Selected Crystal", function()
@@ -86,9 +86,13 @@ if game.PlaceId == 3956818381 then
     }
 
     -- Teleporting Section
-    TeleportTab:CreateDropdown("Select Island", islands, function(island)
-        local part = game:GetService("Workspace").islandUnlockParts[island]
-        Character.HumanoidRootPart.CFrame = part.CFrame
+    TeleportTab:CreateDropdown("Select Island", islands, function(selectedIsland)
+        local part = game:GetService("Workspace").islandUnlockParts:FindFirstChild(selectedIsland)
+        if part then
+            Character.HumanoidRootPart.CFrame = part.CFrame
+        else
+            Rayfield:Notify({ Title = "Error", Content = "Island not found!", Duration = 3 })
+        end
     end)
 
     -- Player WalkSpeed and JumpPower Sliders
