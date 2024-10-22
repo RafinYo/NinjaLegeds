@@ -15,77 +15,85 @@ if game.PlaceId == 3956818381 then
     getgenv().autoswing = false
     getgenv().autosellpets = false
 
-    -- Load Rayfield
-    local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+    -- Load Orion Library
+    local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
 
-    local Window = Rayfield:CreateWindow({
+    local Window = OrionLib:MakeWindow({
         Name = "Xyris Hub - Ninja Legends",
-        LoadingTitle = "Loading Xyris Hub",
-        LoadingSubtitle = "By Xyris Dev Team",
-        ConfigurationSaving = {
-            Enabled = true,
-            FolderName = "XyrisHubStuff",
-        },
-        Discord = {
-            Enabled = true,
-            Invite = "3WtS2F7CaX", -- Discord invite link
-            RememberJoins = true
-        },
+        HidePremium = false,
+        SaveConfig = true,
+        ConfigFolder = "XyrisHubStuff",
+        IntroText = "Loading Xyris Hub",
     })
+
+    -- Tabs
+    local AutofarmTab = Window:MakeTab({ Name = "Autofarm", Icon = "rbxassetid://4483362458" })
+    local PetsTab = Window:MakeTab({ Name = "Pets" })
+    local TeleportTab = Window:MakeTab({ Name = "Teleport" })
+    local PlayerTab = Window:MakeTab({ Name = "Player" })
+    local MiscTab = Window:MakeTab({ Name = "Misc" })
 
     local Character = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
 
-    -- Tabs and Sections
-    local AutofarmTab = Window:CreateTab("Autofarm")
-    local PetsTab = Window:CreateTab("Pets")
-    local TeleportTab = Window:CreateTab("Teleport")
-    local PlayerTab = Window:CreateTab("Player")
-    local MiscTab = Window:CreateTab("Misc")
-
     -- Autofarm Toggles
-    AutofarmTab:CreateToggle("Auto Swing", false, function(state)
-        getgenv().autoswing = state
-        while getgenv().autoswing do
-            game:GetService("Players").LocalPlayer.ninjaEvent:FireServer("swingKatana")
-            task.wait(0.1)
+    AutofarmTab:AddToggle({
+        Name = "Auto Swing",
+        Default = false,
+        Callback = function(state)
+            getgenv().autoswing = state
+            while getgenv().autoswing do
+                game:GetService("Players").LocalPlayer.ninjaEvent:FireServer("swingKatana")
+                task.wait(0.1)
+            end
         end
-    end)
+    })
 
-    AutofarmTab:CreateToggle("Auto Sell", false, function(state)
-        getgenv().autosell = state
-        while getgenv().autosell do
-            game:GetService("Players").LocalPlayer.ninjaEvent:FireServer("sell")
-            task.wait(5)
+    AutofarmTab:AddToggle({
+        Name = "Auto Sell",
+        Default = false,
+        Callback = function(state)
+            getgenv().autosell = state
+            while getgenv().autosell do
+                game:GetService("Players").LocalPlayer.ninjaEvent:FireServer("sell")
+                task.wait(5)
+            end
         end
-    end)
+    })
 
-    -- Pet Crystals Dropdown and Button
+    -- Pet Crystals Dropdown
     local SelectedCrystal
     local crystals = game:GetService("Workspace").mapCrystalsFolder:GetChildren()
+    local crystalNames = {}
 
-    if #crystals == 0 then
-        warn("No crystals found in mapCrystalsFolder.")
-    else
-        local crystalNames = {}
-        for _, crystal in ipairs(crystals) do
-            table.insert(crystalNames, crystal.Name)
-        end
-
-        PetsTab:CreateDropdown("Select Crystal", crystalNames, function(crystalName)
-            SelectedCrystal = crystalName -- Assign the selected crystal name correctly
-        end)
+    for _, crystal in ipairs(crystals) do
+        table.insert(crystalNames, crystal.Name)
     end
 
-    PetsTab:CreateButton("Open Selected Crystal", function()
-        if SelectedCrystal then
-            local event = game:GetService("ReplicatedStorage").rEvents.openCrystalRemote
-            event:InvokeServer("openCrystal", SelectedCrystal)
-        else
-            Rayfield:Notify({ Title = "Error", Content = "No crystal selected!", Duration = 3 })
+    PetsTab:AddDropdown({
+        Name = "Select Crystal",
+        Options = crystalNames,
+        Callback = function(crystalName)
+            SelectedCrystal = crystalName
         end
-    end)
+    })
 
-    -- Complete Island List for Teleporting
+    PetsTab:AddButton({
+        Name = "Open Selected Crystal",
+        Callback = function()
+            if SelectedCrystal then
+                local event = game:GetService("ReplicatedStorage").rEvents.openCrystalRemote
+                event:InvokeServer("openCrystal", SelectedCrystal)
+            else
+                OrionLib:MakeNotification({
+                    Name = "Error",
+                    Content = "No crystal selected!",
+                    Time = 3
+                })
+            end
+        end
+    })
+
+    -- Teleport Dropdown
     local islands = {
         "Enchanted Island", "Astral Island", "Mystical Island", "Space Island",
         "Tundra Island", "Eternal Island", "Sandstorm", "Thunderstorm",
@@ -96,56 +104,81 @@ if game.PlaceId == 3956818381 then
         "Blazing Vortex Island"
     }
 
-    -- Teleporting Section
-    TeleportTab:CreateDropdown("Select Island", islands, function(selectedIsland)
-        local part = game:GetService("Workspace").islandUnlockParts:FindFirstChild(selectedIsland)
-        if part then
-            Character.HumanoidRootPart.CFrame = part.CFrame
-        else
-            Rayfield:Notify({ Title = "Error", Content = "Island not found!", Duration = 3 })
+    TeleportTab:AddDropdown({
+        Name = "Select Island",
+        Options = islands,
+        Callback = function(selectedIsland)
+            local part = game:GetService("Workspace").islandUnlockParts:FindFirstChild(selectedIsland)
+            if part then
+                Character.HumanoidRootPart.CFrame = part.CFrame
+            else
+                OrionLib:MakeNotification({
+                    Name = "Error",
+                    Content = "Island not found!",
+                    Time = 3
+                })
+            end
         end
-    end)
+    })
 
     -- Player WalkSpeed and JumpPower Sliders
-    PlayerTab:CreateSlider("WalkSpeed", 16, 500, 16, function(value)
-        Character.Humanoid.WalkSpeed = value
-    end)
-
-    PlayerTab:CreateSlider("JumpPower", 50, 400, 50, function(value)
-        Character.Humanoid.JumpPower = value
-    end)
-
-    -- Misc Section Buttons
-    MiscTab:CreateButton("Unlock All Islands", function()
-        for _, part in pairs(game:GetService("Workspace").islandUnlockParts:GetChildren()) do
-            firetouchinterest(Character.HumanoidRootPart, part, 0)
-            firetouchinterest(Character.HumanoidRootPart, part, 1)
+    PlayerTab:AddSlider({
+        Name = "WalkSpeed",
+        Min = 16,
+        Max = 500,
+        Default = 16,
+        Callback = function(value)
+            Character.Humanoid.WalkSpeed = value
         end
-    end)
-
-    MiscTab:CreateButton("Unlock All Elements", function()
-        for _, element in pairs(game:GetService("ReplicatedStorage").Elements:GetChildren()) do
-            game:GetService("ReplicatedStorage").rEvents.elementMasteryEvent:FireServer(element)
-        end
-    end)
-
-    MiscTab:CreateButton("Infinite Double Jumps", function()
-        game.Players.LocalPlayer.multiJumpCount.Value = 999999999
-    end)
-
-    -- Notify User on Load
-    Rayfield:Notify({
-        Title = "Xyris Hub Loaded",
-        Content = "Enjoy using the script! Join our Discord for support.",
-        Duration = 6.5,
-        Image = 4483362458, -- Replace with your desired asset ID
-        Actions = {
-            Ignore = {
-                Name = "Join Discord",
-                Callback = function()
-                    setclipboard("https://discord.gg/3WtS2F7CaX")
-                end
-            }
-        }
     })
+
+    PlayerTab:AddSlider({
+        Name = "JumpPower",
+        Min = 50,
+        Max = 400,
+        Default = 50,
+        Callback = function(value)
+            Character.Humanoid.JumpPower = value
+        end
+    })
+
+    -- Misc Buttons
+    MiscTab:AddButton({
+        Name = "Unlock All Islands",
+        Callback = function()
+            for _, part in pairs(game:GetService("Workspace").islandUnlockParts:GetChildren()) do
+                firetouchinterest(Character.HumanoidRootPart, part, 0)
+                firetouchinterest(Character.HumanoidRootPart, part, 1)
+            end
+        end
+    })
+
+    MiscTab:AddButton({
+        Name = "Unlock All Elements",
+        Callback = function()
+            for _, element in pairs(game:GetService("ReplicatedStorage").Elements:GetChildren()) do
+                game:GetService("ReplicatedStorage").rEvents.elementMasteryEvent:FireServer(element)
+            end
+        end
+    })
+
+    MiscTab:AddButton({
+        Name = "Infinite Double Jumps",
+        Callback = function()
+            game.Players.LocalPlayer.multiJumpCount.Value = 999999999
+        end
+    })
+
+    -- Notify on Load
+    OrionLib:MakeNotification({
+        Name = "Xyris Hub Loaded",
+        Content = "Enjoy using the script! Join our Discord for support.",
+        Time = 6.5,
+        Image = "rbxassetid://4483362458",
+        Callback = function()
+            setclipboard("https://discord.gg/3WtS2F7CaX")
+        end
+    })
+
+    OrionLib:Init()
 end
