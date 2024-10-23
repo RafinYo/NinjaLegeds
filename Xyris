@@ -55,7 +55,7 @@ if game.PlaceId == 3956818381 then
             getgenv().autosell = state
             while getgenv().autosell do
                 game:GetService("Players").LocalPlayer.ninjaEvent:FireServer("sell")
-                task.wait(5)
+                task.wait(1)
             end
         end
     })
